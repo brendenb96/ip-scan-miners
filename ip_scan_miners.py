@@ -2,13 +2,29 @@
 
 import sys
 import requests
+import json
 from requests.auth import HTTPDigestAuth
 
-IP_START = "192.168.0.1"
-IP_END = "192.168.0.254"
-USERNAME = "admin"
-PASSWORD = "admin"
-TIMEOUT= 1.0
+IP_START = "10.0.0.2"
+IP_END = "10.0.0.100"
+USERNAME = "root"
+PASSWORD = "root"
+TIMEOUT= 2.0
+
+#LIMITS
+TEMP_HI_S = 85.0
+TEMP_HI_L = 70.0
+TEMP_HI_DEF = 85.0
+
+#COLOURS
+HEADER = '\033[95m'
+OKBLUE = '\033[94m'
+OKGREEN = '\033[92m'
+WARNING = '\033[93m'
+FAIL = u'\u001b[41m'
+ENDC = '\033[0m'
+BOLD = '\033[1m'
+UNDERLINE = '\033[4m'
 
 def ipRange(start_ip, end_ip):
     start = list(map(int, start_ip.split(".")))
@@ -50,50 +66,48 @@ def main():
                 miner_system_page = session.get(system_page, timeout=TIMEOUT, auth=HTTPDigestAuth(username,password))
                 miner_system_content = miner_system_page.json()
 
-                miner_config_page = session.get(config_page, timeout=TIMEOUT, auth=HTTPDigestAuth(username,password))
-                miner_config_content = miner_config_page.json()
+                # miner_config_page = session.get(config_page, timeout=TIMEOUT, auth=HTTPDigestAuth(username,password))
+                # miner_config_content = miner_config_page.json()
             except Exception as err:
                 error_webpage = True
 
             if error_webpage:
-                print "No miner on IP: %s" %ip_dest
+                print WARNING + "No miner on IP: %s" %ip_dest + ENDC
 
             else:
-                ip = ip_dest
-                pool_one = miner_config_content['pools'][0]['url']
-                pool_two = miner_config_content['pools'][1]['url']
-                pool_three = miner_config_content['pools'][2]['url']
-                hash_rate = miner_status_content['summary']['ghsav']
-                type = miner_system_content['minertype']
-                name = miner_system_content['hostname']
-                uptime = miner_system_content['uptime']
-                chain1_temp = miner_status_content['devs'][0]['freq'].split(',')[9].split('=')[1]
-                chain2_temp = miner_status_content['devs'][0]['freq'].split(',')[10].split('=')[1]
-                chain3_temp = miner_status_content['devs'][0]['freq'].split(',')[11].split('=')[1]
-                asic1 = miner_status_content['devs'][0]['chain_acs']
-                asic2= miner_status_content['devs'][1]['chain_acs']
-                asic3 = miner_status_content['devs'][2]['chain_acs']
 
-                if pool_one.rstrip() == '':
-                    pool_one = 'NONE'
-                if pool_two.rstrip() == '':
-                    pool_two = 'NONE'
-                if pool_three.rstrip() == '':
-                    pool_three = 'NONE'
+                print OKBLUE + "########################################################################################################" + ENDC
+                print WARNING + "IP: "+ ip_dest + ENDC
+                print WARNING + "HOSTNAME: "+miner_system_content['hostname'] + ENDC
+                print WARNING + "HASH RATE: "+miner_status_content['summary']['ghsav'] + ENDC
+                # print json.dumps(miner_status_content, indent=2)
+                for element in miner_status_content['devs']:
+                    chain = element['chain_acs']
+                    if 'x' in chain:
+                        print FAIL + "CHIP STATUS: "+element['chain_acs'] + ENDC
+                    else:
+                        print OKGREEN + "CHIP STATUS: "+element['chain_acs'] + ENDC
 
-                print "#########################"
-                print ip
-                print pool_one
-                print pool_two
-                print pool_three
-                print hash_rate
-                print type
-                print name
-                print chain1_temp
-                print chain2_temp
-                print chain3_temp
-                print uptime
-                print "#########################"
+                    temp = float(element['temp'])
+                    if 's9' in miner_system_content['hostname'].lower():
+                        if temp > TEMP_HI_S:
+                            print FAIL + "CHIP TEMP: "+ element['temp'] + ENDC
+                        else:
+                            print OKGREEN + "CHIP TEMP: " + element['temp'] + ENDC
+
+                    elif 'l3' in miner_system_content['hostname'].lower():
+                        if temp > TEMP_HI_L:
+                            print FAIL + "CHIP TEMP: "+ element['temp'] + ENDC
+                        else:
+                            print OKGREEN + "CHIP TEMP: " + element['temp'] + ENDC
+
+                    else:
+                        if temp > TEMP_HI_DEF:
+                            print FAIL + "CHIP TEMP: "+ element['temp'] + ENDC
+                        else:
+                            print OKGREEN + "CHIP TEMP: " + element['temp'] + ENDC
+                print OKBLUE + "########################################################################################################" + ENDC
+                
 
         return 0
 
