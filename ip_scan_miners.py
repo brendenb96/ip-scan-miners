@@ -5,8 +5,11 @@ import requests
 import json
 from requests.auth import HTTPDigestAuth
 
+# THESE NEED TO BE DEFINED DEPENDING ON WHERE THE PROGRAM IS RUN
 IP_START = "10.0.0.2"
 IP_END = "10.0.0.100"
+
+#LOGIN INFO
 USERNAME = "root"
 PASSWORD = "root"
 TIMEOUT= 2.0
